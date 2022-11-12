@@ -35,6 +35,9 @@ Although the object is attached to the global scoped `navigator`, it is not avai
         console.log(navigator.camera);
     }
 
+## Purpose of this fork
+
+Add option displayPopupIfAuthorisationRefused. If the user refuse the camera authorisation,  a popup is displayed with a button to redirect to the camera settings. If false, nothing is displayed, so you can display your own popup.
 
 ## Installation
 

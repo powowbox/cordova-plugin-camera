@@ -58,6 +58,7 @@ typedef NSUInteger CDVMediaType;
 @property (assign) BOOL popoverSupported;
 @property (assign) BOOL usesGeolocation;
 @property (assign) BOOL cropToSize;
+@property (assing) BOOL displayPopupIfAuthorisationRefused;
 
 + (instancetype) createFromTakePictureArguments:(CDVInvokedUrlCommand*)command;
 

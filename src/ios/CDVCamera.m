@@ -82,6 +82,7 @@ static NSString* toBase64(NSData* data) {
     pictureOptions.saveToPhotoAlbum = [[command argumentAtIndex:9 withDefault:@(NO)] boolValue];
     pictureOptions.popoverOptions = [command argumentAtIndex:10 withDefault:nil];
     pictureOptions.cameraDirection = [[command argumentAtIndex:11 withDefault:@(UIImagePickerControllerCameraDeviceRear)] unsignedIntegerValue];
+    pictureOptions.messageIfAuthorisationRefused =  [[command argumentAtIndex:12 withDefault:@(YES)] boolValue];
 
     pictureOptions.popoverSupported = NO;
     pictureOptions.usesGeolocation = NO;
@@ -163,17 +164,19 @@ static NSString* toBase64(NSData* data) {
                  if (!granted)
                  {
                      // Denied; show an alert
-                     dispatch_async(dispatch_get_main_queue(), ^{
-                         UIAlertController *alertController = [UIAlertController alertControllerWithTitle:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"] message:NSLocalizedString(@"Access to the camera has been prohibited; please enable it in the Settings app to continue.", nil) preferredStyle:UIAlertControllerStyleAlert];
-                         [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"OK", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                             [weakSelf sendNoPermissionResult:command.callbackId];
-                         }]];
-                         [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Settings", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:@{} completionHandler:nil];
-                             [weakSelf sendNoPermissionResult:command.callbackId];
-                         }]];
-                         [weakSelf.viewController presentViewController:alertController animated:YES completion:nil];
-                     });
+                     if ( pictureOptions.displayPopupIfAuthorisationRefused == YES ) {
+                      dispatch_async(dispatch_get_main_queue(), ^{
+                          UIAlertController *alertController = [UIAlertController alertControllerWithTitle:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"] message:NSLocalizedString(@"Access to the camera has been prohibited; please enable it in the Settings app to continue.", nil) preferredStyle:UIAlertControllerStyleAlert];
+                          [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"OK", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                              [weakSelf sendNoPermissionResult:command.callbackId];
+                          }]];
+                          [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Settings", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                              [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:@{} completionHandler:nil];
+                              [weakSelf sendNoPermissionResult:command.callbackId];
+                          }]];
+                          [weakSelf.viewController presentViewController:alertController animated:YES completion:nil];
+                      });
+                     }
                  } else {
                      dispatch_async(dispatch_get_main_queue(), ^{
                          [weakSelf showCameraPicker:command.callbackId withOptions:pictureOptions];
