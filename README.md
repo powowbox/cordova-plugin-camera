@@ -43,6 +43,9 @@ Note: displayPopupIfAuthorisationRefused equalse to true,  corresponds to the de
 
 Add option popupAuthorisationRefuseOptions (ios only) Texts of the popup. git Json structure is {'ok': string, 'settings': string, cameraMessage: string, cameraRollMessage: string}
 
+Unformise error messages between android and ios, see CDVCamera.m to have the list.
+
+
 
 ## Installation
 
