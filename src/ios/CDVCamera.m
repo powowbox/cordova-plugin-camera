@@ -82,8 +82,8 @@ static NSString* toBase64(NSData* data) {
     pictureOptions.saveToPhotoAlbum = [[command argumentAtIndex:9 withDefault:@(NO)] boolValue];
     pictureOptions.popoverOptions = [command argumentAtIndex:10 withDefault:nil];
     pictureOptions.cameraDirection = [[command argumentAtIndex:11 withDefault:@(UIImagePickerControllerCameraDeviceRear)] unsignedIntegerValue];
-    pictureOptions.messageIfAuthorisationRefused =  [[command argumentAtIndex:12 withDefault:@(YES)] boolValue];
-
+    pictureOptions.displayPopupIfAuthorisationRefused = [[command argumentAtIndex:12 withDefault:@(YES)] boolValue];
+    pictureOptions.popupAuthorisationRefusedOptions = [command argumentAtIndex:13 withDefault:nil];
     pictureOptions.popoverSupported = NO;
     pictureOptions.usesGeolocation = NO;
 
@@ -138,6 +138,49 @@ static NSString* toBase64(NSData* data) {
            (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad);
 }
 
+
+- (void)displayPopupAuthorisationRefusedWithMessage:(NSString*)message
+                                            command:(CDVInvokedUrlCommand*)command
+{
+    __weak CDVCamera* weakSelf = self;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        CDVPictureOptions* pictureOptions = [CDVPictureOptions createFromTakePictureArguments:command];
+        NSDictionary* popupOptions = pictureOptions.popupAuthorisationRefusedOptions;
+        NSString* okButtonText = [self stringValueForKey:popupOptions key:@"ok" defaultValue:@"OK"];
+        NSString* settingsButtonText = [self stringValueForKey:popupOptions key:@"settings" defaultValue:@"Settings"];
+        
+        UIAlertController *alertController =
+            [UIAlertController alertControllerWithTitle:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"]
+                                                message:NSLocalizedString(message, nil)
+                                         preferredStyle:UIAlertControllerStyleAlert];
+        [alertController addAction:[UIAlertAction
+                   actionWithTitle:NSLocalizedString(okButtonText , nil)
+                             style:UIAlertActionStyleDefault
+                           handler:^(UIAlertAction * _Nonnull action) {
+            [weakSelf sendNoPermissionResult:command.callbackId];
+        }]];
+        [alertController addAction:[UIAlertAction
+                   actionWithTitle:NSLocalizedString(settingsButtonText, nil)
+                             style:UIAlertActionStyleDefault
+                           handler:^(UIAlertAction * _Nonnull action) {
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]
+                                               options:@{}
+                                     completionHandler:nil];
+            [weakSelf sendNoPermissionResult:command.callbackId];
+        }]];
+        [weakSelf.viewController presentViewController:alertController animated:YES completion:nil];
+    });
+}
+
+- (void)returErrorWithMessage:(NSString*)message
+                      command:(CDVInvokedUrlCommand*)command {
+    __weak CDVCamera* weakSelf = self;
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No camera available"];
+    [weakSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+
+}
+
 - (void)takePicture:(CDVInvokedUrlCommand*)command
 {
     self.hasPendingOperation = YES;
@@ -148,12 +191,12 @@ static NSString* toBase64(NSData* data) {
         pictureOptions.popoverSupported = [weakSelf popoverSupported];
         pictureOptions.usesGeolocation = [weakSelf usesGeolocation];
         pictureOptions.cropToSize = NO;
+        NSDictionary* popupOptions = pictureOptions.popupAuthorisationRefusedOptions;
 
         BOOL hasCamera = [UIImagePickerController isSourceTypeAvailable:pictureOptions.sourceType];
         if (!hasCamera) {
-            NSLog(@"Camera.getPicture: source type %lu not available.", (unsigned long)pictureOptions.sourceType);
-            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No camera available"];
-            [weakSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+            NSLog(@"Camera.takePicture: source type %lu not available.", (unsigned long)pictureOptions.sourceType);
+            [self returErrorWithMessage:@"no camera available" command:command];
             return;
         }
 
@@ -165,18 +208,13 @@ static NSString* toBase64(NSData* data) {
                  {
                      // Denied; show an alert
                      if ( pictureOptions.displayPopupIfAuthorisationRefused == YES ) {
-                      dispatch_async(dispatch_get_main_queue(), ^{
-                          UIAlertController *alertController = [UIAlertController alertControllerWithTitle:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"] message:NSLocalizedString(@"Access to the camera has been prohibited; please enable it in the Settings app to continue.", nil) preferredStyle:UIAlertControllerStyleAlert];
-                          [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"OK", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                              [weakSelf sendNoPermissionResult:command.callbackId];
-                          }]];
-                          [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Settings", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                              [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:@{} completionHandler:nil];
-                              [weakSelf sendNoPermissionResult:command.callbackId];
-                          }]];
-                          [weakSelf.viewController presentViewController:alertController animated:YES completion:nil];
-                      });
+                         NSString* msg = [self stringValueForKey:popupOptions
+                                                             key:@"cameraMessage"
+                                                    defaultValue: @"Access to the camera has been prohibited; please enable it in the Settings app to continue."];
+                         [self displayPopupAuthorisationRefusedWithMessage:msg command:command];
                      }
+                     
+                     [self returErrorWithMessage:@"camera access refused" command:command];
                  } else {
                      dispatch_async(dispatch_get_main_queue(), ^{
                          [weakSelf showCameraPicker:command.callbackId withOptions:pictureOptions];
@@ -186,18 +224,15 @@ static NSString* toBase64(NSData* data) {
         } else {
             [weakSelf options:pictureOptions requestPhotoPermissions:^(BOOL granted) {
                 if (!granted) {
-                    // Denied; show an alert
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"] message:NSLocalizedString(@"Access to the camera roll has been prohibited; please enable it in the Settings to continue.", nil) preferredStyle:UIAlertControllerStyleAlert];
-                        [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"OK", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                            [weakSelf sendNoPermissionResult:command.callbackId];
-                        }]];
-                        [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Settings", nil) style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
-                            [weakSelf sendNoPermissionResult:command.callbackId];
-                        }]];
-                        [weakSelf.viewController presentViewController:alertController animated:YES completion:nil];
-                    });
+                    if ( pictureOptions.displayPopupIfAuthorisationRefused == YES ) {
+                        NSString* msg = [self stringValueForKey:popupOptions
+                                                            key:@"cameraRollMessage"
+                                                   defaultValue: @"Access to the camera roll has been prohibited; please enable it in the Settings to continue."];
+                        [self displayPopupAuthorisationRefusedWithMessage:msg command:command];
+                    }
+                    
+                    [self returErrorWithMessage:@"camera roll access refused" command:command];
+
                 } else {
                     dispatch_async(dispatch_get_main_queue(), ^{
                         [weakSelf showCameraPicker:command.callbackId withOptions:pictureOptions];
@@ -274,6 +309,21 @@ static NSString* toBase64(NSData* data) {
     }
     return value;
 }
+
+- (NSString*)stringValueForKey:(NSDictionary*)dict key:(NSString*)key defaultValue:(NSString*)defaultValue
+{
+    if ( dict == nil ) {
+        return defaultValue;
+    }
+    NSString* value = defaultValue;
+    NSString* val = [dict valueForKey:key];
+
+    if (val != nil) {
+        value = val;
+    }
+    return value;
+}
+
 
 - (void)displayPopover:(NSDictionary*)options
 {

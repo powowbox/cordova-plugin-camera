@@ -37,9 +37,12 @@ Although the object is attached to the global scoped `navigator`, it is not avai
 
 ## Purpose of this fork
 
-Add option displayPopupIfAuthorisationRefused. If the user refuses the camera authorisation,  a popup is displayed with a button to redirect to the camera settings. If false, nothing is displayed, so you can display your own popup. 
+Add option displayPopupIfAuthorisationRefused (ios only). If the user refuses the camera authorisation,  a popup is displayed with a button to redirect to the camera settings. If false, nothing is displayed, so you can display your own popup. 
 
 Note: displayPopupIfAuthorisationRefused equalse to true,  corresponds to the default behavior of the official cordova camera plugin.
+
+Add option popupAuthorisationRefuseOptions (ios only) Texts of the popup. git Json structure is {'ok': string, 'settings': string, cameraMessage: string, cameraRollMessage: string}
+
 
 ## Installation
 
