@@ -724,7 +724,6 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         String mimeTypeOfGalleryFile = FileHelper.getMimeType(uriString, this.cordova);
 
         if (finalLocation == null) {
-    static final private String ERROR_RETRIEVING_RESULT = "ERROR_RETRIEVING_RESULT";
             this.failPicture(this.ERROR_RETRIEVING_RESULT);
         } else {
             // If you ask for video or the selected file cannot be processed
