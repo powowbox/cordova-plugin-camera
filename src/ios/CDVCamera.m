@@ -1,22 +1,3 @@
-/*
- Licensed to the Apache Software Foundation (ASF) under one
- or more contributor license agreements.  See the NOTICE file
- distributed with this work for additional information
- regarding copyright ownership.  The ASF licenses this file
- to you under the Apache License, Version 2.0 (the
- "License"); you may not use this file except in compliance
- with the License.  You may obtain a copy of the License at
-
- http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing,
- software distributed under the License is distributed on an
- "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- KIND, either express or implied.  See the License for the
- specific language governing permissions and limitations
- under the License.
- */
-
 #import "CDVCamera.h"
 #import "CDVJpegHeaderWriter.h"
 #import "UIImage+CropScaleOrientation.h"
@@ -194,7 +175,7 @@ static NSString* toBase64(NSData* data) {
 - (void)returErrorWithMessage:(NSString*)message
                       command:(CDVInvokedUrlCommand*)command {
     __weak CDVCamera* weakSelf = self;
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:NO_CAMERA_AVAILABLE];
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:message];
     [weakSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 
 }
@@ -908,7 +889,7 @@ static NSString* toBase64(NSData* data) {
             // save file
             if (![self.data writeToFile:filePath options:NSAtomicWrite error:&err]) {
                 NSLog(@"Fail save files: %@", [err localizedDescription]);
-                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:FAIL_SAVE_FILE;
+                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:FAIL_SAVE_FILE];
             }
             else {
                 result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[self urlTransformer:[NSURL fileURLWithPath:filePath]] absoluteString]];
