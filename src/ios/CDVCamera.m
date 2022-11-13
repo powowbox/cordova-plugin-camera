@@ -31,11 +31,28 @@
 #import <objc/message.h>
 #import <Photos/Photos.h>
 
+
+
 #ifndef __CORDOVA_4_0_0
     #import <Cordova/NSData+Base64.h>
 #endif
 
 #define CDV_PHOTO_PREFIX @"cdv_photo_"
+
+// error message
+#define UNABLE_TO_CREATE_BITMAP @"UNABLE_TO_CREATE_BITMAP"
+#define NULL_DATA_FROM_PHOTO_LIBRARY @"NULL_DATA_FROM_PHOTO_LIBRARY"
+#define ERROR_RETRIEVING_RESULT @"ERROR_RETRIEVING_RESULT"
+#define ERROR_RETRIEVING_IMAGE @"ERROR_RETRIEVING_IMAGE"
+#define NO_IMAGE_SELECTED @"NO_IMAGE_SELECTED"
+#define DID_NOT_COMPLETE @"DID_NOT_COMPLETE"
+#define ERROR_CAPTURING_IMAGE @"ERROR_CAPTURING_IMAGE"
+#define ERROR_COMPRESSING_IMAGE @"ERROR_COMPRESSING_IMAGE"
+#define PERMISSION_DENIED_ERROR_MSG @"PERMISSION_DENIED_ERROR"
+#define NO_CAMERA_AVAILABLE @"NO_CAMERA_AVAILABLE"
+#define FAIL_DELETING_FILES @"FAIL_DELETING_FILES"
+#define FAIL_SAVE_FILE @"FAIL_SAVE_FILE"
+
 
 static NSSet* org_apache_cordova_validArrowDirections;
 
@@ -100,6 +117,7 @@ static NSString* toBase64(NSData* data) {
 @end
 
 @implementation CDVCamera
+
 
 + (void)initialize
 {
@@ -176,7 +194,7 @@ static NSString* toBase64(NSData* data) {
 - (void)returErrorWithMessage:(NSString*)message
                       command:(CDVInvokedUrlCommand*)command {
     __weak CDVCamera* weakSelf = self;
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No camera available"];
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:NO_CAMERA_AVAILABLE];
     [weakSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 
 }
@@ -196,7 +214,7 @@ static NSString* toBase64(NSData* data) {
         BOOL hasCamera = [UIImagePickerController isSourceTypeAvailable:pictureOptions.sourceType];
         if (!hasCamera) {
             NSLog(@"Camera.takePicture: source type %lu not available.", (unsigned long)pictureOptions.sourceType);
-            [self returErrorWithMessage:@"no camera available" command:command];
+            [self returErrorWithMessage:NO_CAMERA_AVAILABLE command:command];
             return;
         }
 
@@ -214,7 +232,7 @@ static NSString* toBase64(NSData* data) {
                          [self displayPopupAuthorisationRefusedWithMessage:msg command:command];
                      }
                      
-                     [self returErrorWithMessage:@"camera access refused" command:command];
+                     [self returErrorWithMessage:PERMISSION_DENIED_ERROR_MSG command:command];
                  } else {
                      dispatch_async(dispatch_get_main_queue(), ^{
                          [weakSelf showCameraPicker:command.callbackId withOptions:pictureOptions];
@@ -231,7 +249,7 @@ static NSString* toBase64(NSData* data) {
                         [self displayPopupAuthorisationRefusedWithMessage:msg command:command];
                     }
                     
-                    [self returErrorWithMessage:@"camera roll access refused" command:command];
+                    [self returErrorWithMessage:PERMISSION_DENIED_ERROR_MSG command:command];
 
                 } else {
                     dispatch_async(dispatch_get_main_queue(), ^{
@@ -279,7 +297,7 @@ static NSString* toBase64(NSData* data) {
 
 - (void)sendNoPermissionResult:(NSString*)callbackId
 {
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"has no access to camera"];   // error callback expects string ATM
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:PERMISSION_DENIED_ERROR_MSG];   // error callback expects string ATM
 
     [self.commandDelegate sendPluginResult:result callbackId:callbackId];
 
@@ -403,7 +421,7 @@ static NSString* toBase64(NSData* data) {
 
     CDVPluginResult* pluginResult;
     if (hasErrors) {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:@"One or more files failed to be deleted."];
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:FAIL_DELETING_FILES];
     } else {
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     }
@@ -419,7 +437,7 @@ static NSString* toBase64(NSData* data) {
     if (self.pickerController && self.pickerController.callbackId && self.pickerController.pickerPopoverController) {
         self.pickerController.pickerPopoverController = nil;
         NSString* callbackId = self.pickerController.callbackId;
-        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"no image selected"];   // error callback expects string ATM
+        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:NO_IMAGE_SELECTED];   // error callback expects string ATM
         [self.commandDelegate sendPluginResult:result callbackId:callbackId];
     }
     self.hasPendingOperation = NO;
@@ -650,7 +668,8 @@ static NSString* toBase64(NSData* data) {
 
                     // save file
                     if (![imageDataWithExif writeToFile:filePath options:NSAtomicWrite error:&err]) {
-                        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:[err localizedDescription]];
+                        NSLog(@"Fail save files: %@", [err localizedDescription]);
+                        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:FAIL_SAVE_FILE];
                     }
                     else {
                         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[self urlTransformer:[NSURL fileURLWithPath:filePath]] absoluteString]];
@@ -664,7 +683,8 @@ static NSString* toBase64(NSData* data) {
 
                     // save file
                     if (![data writeToFile:filePath options:NSAtomicWrite error:&err]) {
-                        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:[err localizedDescription]];
+                        NSLog(@"Fail save files: %@", [err localizedDescription]);
+                        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:FAIL_SAVE_FILE];
                     } else {
                         result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[self urlTransformer:[NSURL fileURLWithPath:filePath]] absoluteString]];
                     }
@@ -753,9 +773,9 @@ static NSString* toBase64(NSData* data) {
     dispatch_block_t invoke = ^ (void) {
         CDVPluginResult* result;
         if (picker.sourceType == UIImagePickerControllerSourceTypeCamera && [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo] != AVAuthorizationStatusAuthorized) {
-            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"has no access to camera"];
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:PERMISSION_DENIED_ERROR_MSG];
         } else {
-            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No Image Selected"];
+            result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:NO_IMAGE_SELECTED];
         }
 
 
@@ -887,7 +907,8 @@ static NSString* toBase64(NSData* data) {
 
             // save file
             if (![self.data writeToFile:filePath options:NSAtomicWrite error:&err]) {
-                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:[err localizedDescription]];
+                NSLog(@"Fail save files: %@", [err localizedDescription]);
+                result = [CDVPluginResult resultWithStatus:CDVCommandStatus_IO_EXCEPTION messageAsString:FAIL_SAVE_FILE;
             }
             else {
                 result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[self urlTransformer:[NSURL fileURLWithPath:filePath]] absoluteString]];

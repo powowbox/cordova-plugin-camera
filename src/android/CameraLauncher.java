@@ -135,6 +135,17 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
     private String applicationId;
 
 
+    // error message
+    static final private String UNABLE_TO_CREATE_BITMAP = "UNABLE_TO_CREATE_BITMAP";
+    static final private String NULL_DATA_FROM_PHOTO_LIBRARY = "NULL_DATA_FROM_PHOTO_LIBRARY";
+    static final private String ERROR_RETRIEVING_RESULT = "ERROR_RETRIEVING_RESULT";
+    static final private String ERROR_RETRIEVING_IMAGE = "ERROR_RETRIEVING_IMAGE";
+    static final private String NO_IMAGE_SELECTED = "NO_IMAGE_SELECTED";
+    static final private String DID_NOT_COMPLETE = "DID_NOT_COMPLETE";
+    static final private String ERROR_CAPTURING_IMAGE = "ERROR_CAPTURING_IMAGE";
+    static final private String ERROR_COMPRESSING_IMAGE = "ERROR_COMPRESSING_IMAGE";
+    static final private String PERMISSION_DENIED_ERROR_MSG = "PERMISSION_DENIED_ERROR";
+
     /**
      * Executes the request and returns PluginResult.
      *
@@ -194,7 +205,6 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     this.callTakePicture(destType, encodingType);
                 }
                 else if ((this.srcType == PHOTOLIBRARY) || (this.srcType == SAVEDPHOTOALBUM)) {
-                    // FIXME: Stop always requesting the permission
                     if(!PermissionHelper.hasPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
                         PermissionHelper.requestPermission(this, SAVE_TO_ALBUM_SEC, Manifest.permission.READ_EXTERNAL_STORAGE);
                     } else {
@@ -450,7 +460,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 processResultFromCamera(destType, cameraIntent);
             } catch (IOException e) {
                 e.printStackTrace();
-                LOG.e(LOG_TAG, "Unable to write to file");
+                LOG.e(LOG_TAG, "UNABLE_TO_WRITE_FILE");
             }
         }
     }
@@ -516,7 +526,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             // Double-check the bitmap.
             if (bitmap == null) {
                 LOG.d(LOG_TAG, "I either have a null image path or bitmap");
-                this.failPicture("Unable to create bitmap!");
+                this.failPicture(this.UNABLE_TO_CREATE_BITMAP);
                 return;
             }
 
@@ -558,7 +568,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 // Double-check the bitmap.
                 if (bitmap == null) {
                     LOG.d(LOG_TAG, "I either have a null image path or bitmap");
-                    this.failPicture("Unable to create bitmap!");
+                    this.failPicture(this.UNABLE_TO_CREATE_BITMAP);
                     return;
                 }
 
@@ -701,7 +711,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
             if (croppedUri != null) {
                 uri = croppedUri;
             } else {
-                this.failPicture("null data from photo library");
+                this.failPicture(this.NULL_DATA_FROM_PHOTO_LIBRARY);
                 return;
             }
         }
@@ -714,7 +724,8 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
         String mimeTypeOfGalleryFile = FileHelper.getMimeType(uriString, this.cordova);
 
         if (finalLocation == null) {
-            this.failPicture("Error retrieving result.");
+    static final private String ERROR_RETRIEVING_RESULT = "ERROR_RETRIEVING_RESULT";
+            this.failPicture(this.ERROR_RETRIEVING_RESULT);
         } else {
             // If you ask for video or the selected file cannot be processed
             // there will be no attempt to resize any returned data.
@@ -738,7 +749,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     }
                     if (bitmap == null) {
                         LOG.d(LOG_TAG, "I either have a null image path or bitmap");
-                        this.failPicture("Unable to create bitmap!");
+                        this.failPicture(this.UNABLE_TO_CREATE_BITMAP);
                         return;
                     }
 
@@ -762,7 +773,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
                             } catch (Exception e) {
                                 e.printStackTrace();
-                                this.failPicture("Error retrieving image: "+e.getLocalizedMessage());
+                                this.failPicture(this.ERROR_RETRIEVING_IMAGE);
                             }
                         } else {
                             this.callbackContext.success(finalLocation);
@@ -821,12 +832,12 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
 
             }// If cancelled
             else if (resultCode == Activity.RESULT_CANCELED) {
-                this.failPicture("No Image Selected");
+                this.failPicture(this.NO_IMAGE_SELECTED);
             }
 
             // If something else
             else {
-                this.failPicture("Did not complete!");
+                this.failPicture(this.DID_NOT_COMPLETE);
             }
         }
         // If CAMERA
@@ -844,18 +855,18 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
-                    this.failPicture("Error capturing image: "+e.getLocalizedMessage());
+                    this.failPicture(this.ERROR_CAPTURING_IMAGE);
                 }
             }
 
             // If cancelled
             else if (resultCode == Activity.RESULT_CANCELED) {
-                this.failPicture("No Image Selected");
+                this.failPicture(this.NO_IMAGE_SELECTED);
             }
 
             // If something else
             else {
-                this.failPicture("Did not complete!");
+                this.failPicture(this.DID_NOT_COMPLETE);
             }
         }
         // If retrieving photo from library
@@ -869,9 +880,9 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                     }
                 });
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                this.failPicture("No Image Selected");
+                this.failPicture(this.NO_IMAGE_SELECTED);
             } else {
-                this.failPicture("Selection did not complete!");
+                this.failPicture(this.DID_NOT_COMPLETE);
             }
         }
     }
@@ -1276,8 +1287,9 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                 output = null;
                 code = null;
             }
-        } catch (Exception e) {
-            this.failPicture("Error compressing image: "+e.getLocalizedMessage());
+          } catch (Exception e) {
+            e.printStackTrace();
+            this.failPicture(this.ERROR_COMPRESSING_IMAGE);
         }
         jpeg_data = null;
     }
@@ -1317,7 +1329,7 @@ public class CameraLauncher extends CordovaPlugin implements MediaScannerConnect
                                           int[] grantResults) {
         for (int r : grantResults) {
             if (r == PackageManager.PERMISSION_DENIED) {
-                this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, PERMISSION_DENIED_ERROR));
+                this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, this.PERMISSION_DENIED_ERROR_MSG));
                 return;
             }
         }
