@@ -43,7 +43,9 @@ Note: displayPopupIfAuthorisationRefused equalse to true,  corresponds to the de
 
 Add option popupAuthorisationRefuseOptions (ios only) Texts of the popup. git Json structure is {'ok': string, 'settings': string, cameraMessage: string, cameraRollMessage: string}
 
-Unformise error messages between android and ios, see CDVCamera.m to have the list.
+Uniformise error messages between android and ios, see CDVCamera.m to have the list.
+
+Remove authorization popup for the photo picker. It's not needed if you only want to choose a photo inside the photo library (test done on iOS 12, 15, 16).
 
 
 

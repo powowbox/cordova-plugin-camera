@@ -568,13 +568,14 @@ static NSString* toBase64(NSData* data) {
                 completion(YES);
                 break;
             case PHAuthorizationStatusNotDetermined: {
-                [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus authorizationStatus) {
+                completion(YES); // SPI 2022/11/25 request access not needed for photo picker
+                /*[PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus authorizationStatus) {
                     if (authorizationStatus == PHAuthorizationStatusAuthorized) {
                         completion(YES);
                     } else {
                         completion(NO);
                     }
-                }];
+                }];*/
                 break;
             }
             default:
@@ -772,7 +773,8 @@ static NSString* toBase64(NSData* data) {
 
     dispatch_block_t invoke = ^ (void) {
         CDVPluginResult* result;
-        if (picker.sourceType == UIImagePickerControllerSourceTypeCamera && [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo] != AVAuthorizationStatusAuthorized) {
+        if (   picker.sourceType == UIImagePickerControllerSourceTypeCamera
+            && [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo] != AVAuthorizationStatusAuthorized) {
             result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:PERMISSION_DENIED_ERROR_MSG];
         } else {
             result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:NO_IMAGE_SELECTED];
@@ -801,7 +803,8 @@ static NSString* toBase64(NSData* data) {
     return locationManager;
 }
 
-- (void)locationManager:(CLLocationManager*)manager didUpdateToLocation:(CLLocation*)newLocation fromLocation:(CLLocation*)oldLocation
+- (void)locationManager:(CLLocationManager*)manager
+    didUpdateToLocation:(CLLocation*)newLocation fromLocation:(CLLocation*)oldLocation
 {
     if (locationManager == nil) {
         return;
