@@ -45,7 +45,7 @@ Add option popupAuthorisationRefuseOptions (ios only) Texts of the popup. git Js
 
 Uniformise error messages between android and ios, see CDVCamera.m to have the list.
 
-Remove authorization popup for the photo picker. It's not needed if you only want to choose a photo inside the photo library (test done on iOS 12, 15, 16).
+Remove authorization popup for the photo picker on iOS. It's not needed if you only want to choose a photo inside the photo library (test done on iOS 12, 15, 16).
 
 
 
