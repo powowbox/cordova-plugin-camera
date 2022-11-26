@@ -41,7 +41,7 @@ Add option displayPopupIfAuthorisationRefused (ios only). If the user refuses th
 
 Note: displayPopupIfAuthorisationRefused of true, corresponds to the default behavior of the official cordova camera plugin.
 
-Add option popupAuthorisationRefuseOptions (ios only) Texts of the popup. git Json structure is {'ok': string, 'settings': string, cameraMessage: string, cameraRollMessage: string}
+Add option popupAuthorisationRefuseOptions (ios only) Texts of the popup json structure is {'ok': string, 'settings': string, cameraMessage: string, cameraRollMessage: string}
 
 Uniformise error messages between android and ios, see CDVCamera.m to have the list.
 
